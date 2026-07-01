@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <title>Tracking de Correos Office 365</title>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/css/bootstrap.min.css"
+          rel="stylesheet">
+
+    <link href="/static/style.css"
+          rel="stylesheet">
+
+</head>
+
+<body>
+
+<div class="container-fluid">
+
+    <div class="row">
+
+        <div class="col-12">
+
+            <div class="cabecera">
+
+                <div>
+
+                    <img src="/static/logo_seps.png"
+                         class="logo">
+
+                </div>
+
+                <div class="titulo">
+
+                    <h2>
+
+                        Tracking de Correos Office 365
+
+                    </h2>
+
+                    <small>
+
+                        Superintendencia de Economía Popular y Solidaria
+
+                    </small>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <div class="row mt-4">
+
+        <div class="col-md-3">
+
+            <div class="card shadow">
+
+                <div class="card-body">
+
+                    <h6>
+
+                        Última actualización
+
+                    </h6>
+
+                    <h5>
+
+                        {{ ultima_actualizacion }}
+
+                    </h5>
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <div class="col-md-3">
+
+            <div class="card shadow">
+
+                <div class="card-body">
+
+                    <h6>
+
+                        Registros cargados
+
+                    </h6>
+
+                    <h3>
+
+                        {{ registros_cargados }}
+
+                    </h3>
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+
+        <div class="col-md-3">
+
+            <div class="card shadow">
+
+                <div class="card-body">
+
+                    <h6>
+
+                        Resultados
+
+                    </h6>
+
+                    <h3>
+
+                        {{ total }}
+
+                    </h3>
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+
+        <div class="col-md-3">
+
+            <div class="card shadow">
+
+                <div class="card-body">
+
+                    <form action="/actualizar"
+                          method="post">
+
+                        <button class="btn btn-success w-100">
+
+                            🔄 Actualizar Office 365
+
+                        </button>
+
+                    </form>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+
+    <div class="row mt-4">
+
+        <div class="col-12">
+
+            <div class="card shadow">
+
+                <div class="card-header">
+
+                    Filtros
+
+                </div>
+
+                <div class="card-body">
+
+                    <form action="/buscar"
+                          method="post">
+
+                        <div class="row">
+
+                            <div class="col-md-3">
+
+                                <label>
+
+                                    Remitente
+
+                                </label>
+
+                                <input
+                                        class="form-control"
+
+                                        name="remitente"
+
+                                        value="{{ remitente }}">
+
+                            </div>
+
+
+                            <div class="col-md-3">
+
+                                <label>
+
+                                    Destinatario
+
+                                </label>
+
+                                <input
+
+                                        class="form-control"
+
+                                        name="destinatario"
+
+                                        value="{{ destinatario }}">
+
+                            </div>
+
+
+
+                            <div class="col-md-3">
+
+                                <label>
+
+                                    Asunto
+
+                                </label>
+
+                                <input
+
+                                        class="form-control"
+
+                                        name="asunto"
+
+                                        value="{{ asunto }}">
+
+                            </div>
+
+
+                            <div class="col-md-3">
+
+                                <label>
+
+                                    Estado
+
+                                </label>
+
+                                <select
+
+                                        class="form-select"
+
+                                        name="estado">
+
+                                    <option value="">
+
+                                        Todos
+
+                                    </option>
+
+                                    <option>
+
+                                        Delivered
+
+                                    </option>
+
+                                    <option>
+
+                                        Failed
+
+                                    </option>
+
+                                    <option>
+
+                                        GettingStatus
+
+                                    </option>
+
+                                    <option>
+
+                                        FilteredAsSpam
+
+                                    </option>
+
+                                </select>
+
+                            </div>
+
+                        </div>
+
+
+
+                        <div class="row mt-3">
+
+                            <div class="col-md-3">
+
+                                <label>
+
+                                    Fecha Inicio
+
+                                </label>
+
+                                <input
+
+                                        type="date"
+
+                                        class="form-control"
+
+                                        name="fecha_inicio">
+
+                            </div>
+
+
+
+                            <div class="col-md-3">
+
+                                <label>
+
+                                    Fecha Fin
+
+                                </label>
+
+                                <input
+
+                                        type="date"
+
+                                        class="form-control"
+
+                                        name="fecha_fin">
+
+                            </div>
+
+
+
+                            <div class="col-md-6 text-end">
+
+                                <br>
+
+                                <button
+
+                                        class="btn btn-primary">
+
+                                    Buscar
+
+                                </button>
+
+                            </div>
+
+                        </div>
+
+                    </form>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+
+    <div class="row mt-4">
+
+        <div class="col-12">
+
+            <div class="card shadow">
+
+                <div class="card-header">
+
+                    Resultados
+					                </div>
+
+                <div class="card-body">
+
+                    <div class="table-responsive">
+
+                        <table class="table table-striped table-hover align-middle">
+
+                            <thead class="table-dark">
+
+                            <tr>
+
+                                <th>Fecha Ecuador</th>
+
+                                <th>Remitente</th>
+
+                                <th>Destinatario</th>
+
+                                <th>Asunto</th>
+
+                                <th>Estado</th>
+
+                                <th>Tamaño</th>
+
+                                <th>Acciones</th>
+
+                            </tr>
+
+                            </thead>
+
+                            <tbody>
+
+                            {% for r in resultados %}
+
+                            <tr>
+
+                                <td>
+
+                                    {{ r.Received }}
+
+                                </td>
+
+                                <td>
+
+                                    {{ r.SenderAddress }}
+
+                                </td>
+
+                                <td>
+
+                                    {{ r.RecipientAddress }}
+
+                                </td>
+
+                                <td>
+
+                                    {{ r.Subject }}
+
+                                </td>
+
+                                <td>
+
+                                    {% if r.Status=="Delivered" %}
+
+                                    <span class="badge bg-success">
+
+                                        Delivered
+
+                                    </span>
+
+                                    {% elif r.Status=="Failed" %}
+
+                                    <span class="badge bg-danger">
+
+                                        Failed
+
+                                    </span>
+
+                                    {% elif r.Status=="GettingStatus" %}
+
+                                    <span class="badge bg-warning text-dark">
+
+                                        GettingStatus
+
+                                    </span>
+
+                                    {% elif r.Status=="FilteredAsSpam" %}
+
+                                    <span class="badge bg-secondary">
+
+                                        Spam
+
+                                    </span>
+
+                                    {% else %}
+
+                                    <span class="badge bg-primary">
+
+                                        {{ r.Status }}
+
+                                    </span>
+
+                                    {% endif %}
+
+                                </td>
+
+                                <td>
+
+                                    {{ r.Size }}
+
+                                </td>
+
+                                <td>
+
+                                    <div class="btn-group">
+
+                                        <a
+                                                class="btn btn-outline-primary btn-sm"
+
+                                                href="/detalle/{{ r.MessageTraceId }}">
+
+                                            👁 Ver
+
+                                        </a>
+
+                                        <a
+                                                class="btn btn-outline-success btn-sm"
+
+                                                href="/certificado/{{ r.MessageTraceId }}">
+
+                                            📄 Certificado
+
+                                        </a>
+
+                                    </div>
+
+                                </td>
+
+                            </tr>
+
+                            {% endfor %}
+
+                            </tbody>
+
+                        </table>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/js/bootstrap.bundle.min.js"></script>
+
+</body>
+
+</html>
