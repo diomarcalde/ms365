@@ -382,6 +382,7 @@
 
                                 <th>Fecha Ecuador</th>
 
+                                <th>Trace</th>
                                 <th>Remitente</th>
 
                                 <th>Destinatario</th>
@@ -408,6 +409,10 @@
 
                                     {{ r.Received }}
 
+                                </td>
+
+                                <td>
+                                    <small>{{ r.MessageTraceId[:8] }}...</small>
                                 </td>
 
                                 <td>
@@ -496,7 +501,7 @@
                                         <a
                                                 class="btn btn-outline-success btn-sm"
 
-                                                href="/certificado/{{ r.MessageTraceId }}">
+                                                href="/certificado/{{ r.MessageTraceId }}/{{ r.RecipientAddress }}">
 
                                             📄 Certificado
 

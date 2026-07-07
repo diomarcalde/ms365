@@ -5,23 +5,63 @@ from datetime import datetime, timedelta
 JSON_FILE = r"C:\temp\correos.json"
 
 
-def convertir_hora_ecuador(fecha_utc):
+# ==========================================================
+# LECTURA DEL JSON
+# ==========================================================
+
+def _leer_json():
+
+    if not os.path.exists(JSON_FILE):
+        return []
+
+    try:
+
+        with open(JSON_FILE, "r", encoding="utf-8") as archivo:
+
+            contenido = archivo.read().strip()
+
+        if not contenido:
+            return []
+
+        datos = json.loads(contenido)
+
+        if isinstance(datos, dict):
+            return [datos]
+
+        if isinstance(datos, list):
+            return datos
+
+        return []
+
+    except Exception as e:
+
+        print("Error leyendo JSON:", e)
+
+        return []
+
+
+# ==========================================================
+# FECHAS
+# ==========================================================
+
+def convertir_hora_ecuador(fecha):
+
+    if not fecha:
+        return ""
 
     try:
 
         fecha = datetime.fromisoformat(
-            fecha_utc.replace("Z", "+00:00")
+            str(fecha).replace("Z", "+00:00")
         )
 
-        fecha_ec = fecha - timedelta(hours=5)
+        fecha = fecha - timedelta(hours=5)
 
-        return fecha_ec.strftime(
-            "%d/%m/%Y %H:%M:%S"
-        )
+        return fecha.strftime("%d/%m/%Y %H:%M:%S")
 
-    except:
+    except Exception:
 
-        return fecha_utc
+        return str(fecha)
 
 
 def ultima_actualizacion():
@@ -33,108 +73,213 @@ def ultima_actualizacion():
         os.path.getmtime(JSON_FILE)
     )
 
-    return fecha.strftime(
-        "%d/%m/%Y %H:%M:%S"
-    )
+    return fecha.strftime("%d/%m/%Y %H:%M:%S")
 
 
 def total_registros():
 
-    if not os.path.exists(JSON_FILE):
-        return 0
+    return len(_leer_json())
 
-    with open(
-            JSON_FILE,
-            "r",
-            encoding="utf-8"
-    ) as archivo:
 
-        datos = json.load(archivo)
-
-    if isinstance(datos, dict):
-        return 1
-
-    return len(datos)
-
+# ==========================================================
+# BUSQUEDA
+# ==========================================================
 
 def buscar_correos(
-        remitente,
-        destinatario,
-        asunto,
-        fecha_inicio,
-        fecha_fin):
+        remitente="",
+        destinatario="",
+        asunto="",
+        fecha_inicio="",
+        fecha_fin="",
+        estado=""
+):
 
-    if not os.path.exists(JSON_FILE):
-        return []
+    datos = _leer_json()
 
-    try:
+    resultados = []
 
-        with open(
-                JSON_FILE,
-                "r",
-                encoding="utf-8"
-        ) as archivo:
+    for correo in datos:
 
-            datos = json.load(archivo)
+        if remitente:
 
-        if isinstance(datos, dict):
-            datos = [datos]
-
-        resultados = []
-
-        for correo in datos:
-
-            sender = str(
-                correo.get(
+            if remitente.lower() not in correo.get(
                     "SenderAddress",
                     ""
-                )
-            )
+            ).lower():
+                continue
 
-            recipient = str(
-                correo.get(
+        if destinatario:
+
+            if destinatario.lower() not in correo.get(
                     "RecipientAddress",
                     ""
-                )
-            )
+            ).lower():
+                continue
 
-            subject = str(
-                correo.get(
+        if asunto:
+
+            if asunto.lower() not in correo.get(
                     "Subject",
                     ""
-                )
+            ).lower():
+                continue
+
+        if estado:
+
+            if estado.lower() != correo.get(
+                    "Status",
+                    ""
+            ).lower():
+                continue
+
+        fila = correo.copy()
+
+        fila["Received"] = convertir_hora_ecuador(
+            fila.get("Received")
+        )
+
+        resultados.append(fila)
+
+    resultados.sort(
+
+        key=lambda x: x["Received"],
+
+        reverse=True
+
+    )
+
+    return resultados
+
+
+# ==========================================================
+# DETALLE DEL ENVIO
+# ==========================================================
+
+def obtener_por_trace(trace):
+
+    datos = _leer_json()
+
+    resultados = []
+
+    for correo in datos:
+
+        if correo.get("MessageTraceId") == trace:
+
+            fila = correo.copy()
+
+            fila["Received"] = convertir_hora_ecuador(
+
+                fila.get("Received")
+
             )
 
-            if remitente:
+            resultados.append(fila)
 
-                if remitente.lower() not in sender.lower():
-                    continue
+    return resultados
 
-            if destinatario:
 
-                if destinatario.lower() not in recipient.lower():
-                    continue
+# ==========================================================
+# CERTIFICADO INDIVIDUAL
+# ==========================================================
 
-            if asunto:
+def obtener_por_trace_y_destinatario(
+        trace,
+        destinatario
+):
 
-                if asunto.lower() not in subject.lower():
-                    continue
+    datos = _leer_json()
 
-            correo["Received"] = convertir_hora_ecuador(
-                str(
-                    correo.get(
-                        "Received",
-                        ""
-                    )
-                )
+    for correo in datos:
+
+        if (
+
+                correo.get("MessageTraceId") == trace
+
+                and
+
+                correo.get("RecipientAddress") == destinatario
+
+        ):
+
+            fila = correo.copy()
+
+            fila["Received"] = convertir_hora_ecuador(
+
+                fila.get("Received")
+
             )
 
-            resultados.append(correo)
+            return fila
 
-        return resultados
+    return None
 
-    except Exception as e:
 
-        print(e)
+# ==========================================================
+# DASHBOARD
+# ==========================================================
 
-        return []
+def estadisticas():
+
+    datos = _leer_json()
+
+    return {
+
+        "total": len(datos),
+
+        "Delivered": len(
+
+            [
+
+                x
+
+                for x in datos
+
+                if x.get("Status") == "Delivered"
+
+            ]
+
+        ),
+
+        "Failed": len(
+
+            [
+
+                x
+
+                for x in datos
+
+                if x.get("Status") == "Failed"
+
+            ]
+
+        ),
+
+        "GettingStatus": len(
+
+            [
+
+                x
+
+                for x in datos
+
+                if x.get("Status") == "GettingStatus"
+
+            ]
+
+        ),
+
+        "FilteredAsSpam": len(
+
+            [
+
+                x
+
+                for x in datos
+
+                if x.get("Status") == "FilteredAsSpam"
+
+            ]
+
+        )
+
+    }

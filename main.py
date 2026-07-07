@@ -18,14 +18,17 @@ from fastapi.templating import Jinja2Templates
 from o365 import (
     buscar_correos,
     ultima_actualizacion,
-    total_registros
+    total_registros,
+    obtener_por_trace,
+    obtener_por_trace_y_destinatario,
+    estadisticas
 )
 
 app = FastAPI()
 
 POWERSHELL = r"C:\Program Files\PowerShell\7\pwsh.exe"
 
-SCRIPT = r"C:\Users\docalderon\PycharmProjects\tracking365-demo\actualizar.ps1"
+SCRIPT = r"C:\Users\docalderon\PycharmProjects\ms365\actualizar.ps1"
 
 app.mount(
     "/static",
@@ -53,7 +56,8 @@ async def home(request: Request):
             "fecha_inicio": "",
             "fecha_fin": "",
             "ultima_actualizacion": ultima_actualizacion(),
-            "registros_cargados": total_registros()
+            "registros_cargados": total_registros(),
+            "stats": estadisticas()
         }
     )
 
@@ -88,7 +92,8 @@ async def buscar(
             "fecha_inicio": fecha_inicio,
             "fecha_fin": fecha_fin,
             "ultima_actualizacion": ultima_actualizacion(),
-            "registros_cargados": total_registros()
+            "registros_cargados": total_registros(),
+            "stats": estadisticas()
         }
     )
 @app.post("/actualizar")
@@ -117,70 +122,27 @@ async def actualizar():
 
 @app.get("/detalle/{traceid}")
 async def detalle(traceid: str):
-
-    resultados = buscar_correos(
-
-        "", "", "", "", ""
-
-    )
-
-    for correo in resultados:
-
-        if correo["MessageTraceId"] == traceid:
-
-            return correo
-
+    correos=obtener_por_trace(traceid)
+    if not correos:
+        return {"mensaje":"Correo no encontrado"}
     return {
-
-        "mensaje": "Correo no encontrado"
-
+        "trace":traceid,
+        "total_destinatarios":len(correos),
+        "remitente":correos[0]["SenderAddress"],
+        "asunto":correos[0]["Subject"],
+        "fecha":correos[0]["Received"],
+        "destinatarios":correos
     }
 
 
-@app.get("/certificado/{traceid}")
-async def certificado(traceid: str):
-
-    resultados = buscar_correos(
-
-        "", "", "", "", ""
-
-    )
-
-    for correo in resultados:
-
-        if correo["MessageTraceId"] == traceid:
-
-            archivo = os.path.join(
-
-                tempfile.gettempdir(),
-
-                f"certificado_{traceid}.pdf"
-
-            )
-
-            generar_pdf(
-
-                correo,
-
-                archivo
-
-            )
-
-            return FileResponse(
-
-                archivo,
-
-                media_type="application/pdf",
-
-                filename=f"Certificado_{traceid}.pdf"
-
-            )
-
-    return {
-
-        "mensaje": "Correo no encontrado"
-
-    }
+@app.get("/certificado/{traceid}/{destinatario}")
+async def certificado(traceid:str,destinatario:str):
+    correo=obtener_por_trace_y_destinatario(traceid,destinatario)
+    if correo is None:
+        return {"mensaje":"Correo no encontrado"}
+    archivo=os.path.join(tempfile.gettempdir(),f"certificado_{traceid}.pdf")
+    generar_pdf(correo,archivo)
+    return FileResponse(archivo,media_type="application/pdf",filename=f"Certificado_{traceid}.pdf")
 
 if __name__ == "__main__":
 
@@ -188,7 +150,7 @@ if __name__ == "__main__":
 
     uvicorn.run(
         "main:app",
-        host="127.0.0.1",
-        port=8000,
+        host="0.0.0.0",
+        port=8080,
         reload=True
     )
